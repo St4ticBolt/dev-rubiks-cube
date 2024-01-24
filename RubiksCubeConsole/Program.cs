@@ -1,19 +1,21 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-/*using RubiksCubeShared;
-using RubiksCubeShared.Interfaces;*/
 using System;
-using RubiksCore;
+using RubiksCubeShared.Interfaces;
+using RubiksCubeShared;
 
 class Program
 {
     static void Main()
     {
-       /* var services = new ServiceCollection()
-        .AddTransient<IRubiksCube, RubiksCube>()
+        var services = new ServiceCollection()
+        .AddTransient<RubiksCore.RubiksCube>()
+        .AddTransient<IRubiksCubePrinter, RubiksCubePrinter>()
+        .AddTransient<IRubiksCubeInputs, RubiksCubeInputs>()
                 .BuildServiceProvider();
-        var cube = services.GetRequiredService<IRubiksCube>();
-
-        Console.WriteLine("Initial Cube State:");
+        var cube = services.GetRequiredService<RubiksCore.RubiksCube>();
+        var printer = services.GetRequiredService<IRubiksCubePrinter>();
+        var baseCube = cube.Copy();
+        /*Console.WriteLine("Initial Cube State:");
         cube.PrintCube();
 
         // Apply face rotations
@@ -33,21 +35,63 @@ class Program
         Console.WriteLine("\nCube State After Rotations:");
         cube.PrintCube();*/
 
-        RubiksCube cube = new RubiksCube();
+        printer.PrintCube(cube.Cubies);
+        bool runRubiks = true;
+
+        while (runRubiks)
+        {
+            Console.WriteLine("If you wish to exit the rubiks cube from here simply hit the escape key");
+            Console.WriteLine("This is an emulated Rubiks cube would you like to see the demo turns affect the cube?");
+            Console.WriteLine("'Y' (Yes, show result after demo turns of Front clockwise, right counter clockwise, Up clockwise, Back counter clockwise, left and finall down counter clockwise");
+            Console.WriteLine("'N' (No, I want to input my own)");
+            ConsoleKeyInfo info = Console.ReadKey(true);
+            if(info.Key == ConsoleKey.Escape)
+            {
+                runRubiks = false;
+                return;
+            }
+            var isYes = info.KeyChar == 'y';
+            var isNo = info.KeyChar == 'n';
+
+            if (!isYes && !isNo)
+                continue;
+
+            //Console.WriteLine(cube.ToString());
+            if (isYes)
+            {
+                cube.TurnFront();
+                cube.TurnRight(RubiksCore.TurningDirection.NineoClock);
+                cube.TurnUp();
+                cube.TurnBack(RubiksCore.TurningDirection.NineoClock);
+                cube.TurnLeft();
+                cube.TurnDown(RubiksCore.TurningDirection.NineoClock);
+
+                printer.PrintCube(cube.Cubies);
+
+                //reset cube
+                cube = baseCube.Copy();
+                continue;
+            }
+            var controls = services.GetRequiredService<IRubiksCubeInputs>();
+            bool customInstructions = true;
+            Console.WriteLine("What would you like it to do? (use the instructions in the readme file)");
+            Console.WriteLine("If you wish to leave the custom input then use the 'c' key to cancel");
+            while (customInstructions)
+            {
+                var input = Console.ReadLine();
+                if(input?.Trim().ToLowerInvariant() == "c")
+                {
+                    customInstructions = false;
+                    continue;
+                }
+                controls.TurnCube(input, cube);
+                printer.PrintCube(cube.Cubies);
+            }
 
 
-        PrintCube(cube.Cubies);
+        }
 
-        //Console.WriteLine(cube.ToString());
 
-        cube.TurnFront();
-        cube.TurnRight(TurningDirection.NineoClock);
-        cube.TurnUp();
-        cube.TurnBack(TurningDirection.NineoClock);
-        cube.TurnLeft();
-        cube.TurnDown(TurningDirection.NineoClock);
-
-        PrintCube(cube.Cubies);
 
         //Console.WriteLine(cube.ToString());
 
@@ -55,47 +99,6 @@ class Program
         {
             Console.WriteLine(cubie.Position.ToString());
         }*/
-    }
-
-    public static void PrintCube(IEnumerable<Cubie> cubies)
-    {
-        // Define an array of characters to represent the colors
-        char[] symbols = new char[] { 'W', 'R', 'G', 'O', 'B', 'Y' };
-        // Define an array of console colors to match the symbols
-        ConsoleColor[] colors = new ConsoleColor[] { ConsoleColor.White, ConsoleColor.Red, ConsoleColor.Green, ConsoleColor.DarkYellow, ConsoleColor.Blue, ConsoleColor.Yellow };
-        // Define an array of faces to print in the net of a cube
-        RubiksDirection[] faces = new RubiksDirection[] { RubiksDirection.Left, RubiksDirection.Up,  RubiksDirection.Front,  RubiksDirection.Back, RubiksDirection.Down, RubiksDirection.Right };
-        // Define an array of offsets to print the faces in the correct position
-        int[,] offsets = new int[,] { { 0, 3 }, { 0, 0 }, { 0, 1 }, { 0, 2 }, { 0, 4 }, { 1, 1 } };
-        // Loop over the faces
-        for (int f = 0; f < 6; f++)
-        {
-            // Get the current face
-            RubiksDirection face = faces[f];
-
-            // Use a foreach loop to iterate over the IEnumerable of Cubies
-            foreach (Cubie cubie in cubies)
-            {
-                // Get the color of the current cubie
-                RubiksColor? color = cubie.GetColor(face);
-                // If the color is not null, print the corresponding symbol and color
-                if (color != null)
-                {
-                    // Get the index of the color in the enum
-                    int index = (int)color;
-                    // Set the foreground color of the console
-                    Console.ForegroundColor = colors[index];
-                    // Write the symbol of the color
-                    Console.Write(symbols[index]);
-                }
-
-            }
-            // Write a new line after each row
-            Console.WriteLine();
-
-        }
-        // Reset the foreground color of the console
-        Console.ResetColor();
     }
 }
 
